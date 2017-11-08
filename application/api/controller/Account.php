@@ -89,12 +89,12 @@ class Account extends BaseApi{
                 //给代理商添加系统消息
                 $content = sprintf('【提现通知】您的提现申请（%s）已提交成功，系统预计会在1-3个工作日之内给您办理，敬请留意。如需帮助，请拨打客服电话%s。',$money,4000883993);
                 $user_message_model = model('UserMessage');
-                $user_message_model->addMessage($this->user_info['uid'],'',$content);
+                $user_message_model->addMessage(array('uid'=>$this->user_info['uid'],'title'=>'','content'=>$content));
                 
                 //给平台添加系统消息
                 $content = sprintf('【提现通知】有新的提现申请（%s）提交，请在3个工作日内完成处理',$money);
                 $user_message_model = model('SysconfMessage');
-                $user_message_model->addMessage($this->user_info['uid'],'',$content);
+                $user_message_model->addMessage(array('uid'=>$this->user_info['uid'],'title'=>'','content'=>$content));
                 
                 //发送客服消息
                 postCustomerMessage($this->user_info['uid'], 10009, array($money,4000883993));

@@ -14,11 +14,7 @@ class Agent extends BaseApi{
     
     //申请代理商
     public function apply(){
-        if(empty($this->user_info)){
-            return jsonReturn(LOGIN_FAILED, '请先登录，谢谢');
-        }
-        
-        $user_info = $this->checkLoginStatus();
+        $user_info = $this->user_info;
         if(empty($user_info)){
             return jsonReturn(LOGIN_FAILED, '请先登录，谢谢');
         }
@@ -85,7 +81,7 @@ class Agent extends BaseApi{
             //给平台添加系统消息
             $content = '【审核通知】有新的代理商申请，请在3个工作日内完成处理。';
             $user_message_model = model('SysconfMessage');
-            $user_message_model->addMessage($this->user_info['uid'],'',$content);
+            $user_message_model->addMessage(array('uid'=>$this->user_info['uid'],'title'=>'','content'=>$content));
             
             //发送客服消息
             postCustomerMessage($user_info['uid'], 10003, array($data['agent_level'],4000883993));

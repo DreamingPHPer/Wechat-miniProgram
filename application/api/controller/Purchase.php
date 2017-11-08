@@ -1,6 +1,7 @@
 <?php
 namespace app\api\controller;
 use app\common\controller\BaseApi;
+use tool\Task;
 
 //求购信息控制类
 class Purchase extends BaseApi{
@@ -51,7 +52,7 @@ class Purchase extends BaseApi{
                 $buypart['buyer'] = $buyer_info;
                 
                 //获取报价数量
-                $offer_price_num = $buyparts_model->getOfferPriceNum(array('buy_id'=>$buypart['buy_id']));
+                $offer_price_num = $buyparts_model->getOfferPriceNum(array('buy_id'=>$buypart['buy_id'],'status'=>array('neq',3)));
                 $buypart['offer_price_num'] = $offer_price_num;
                 
                 //获取求购信息的位置
@@ -118,37 +119,51 @@ class Purchase extends BaseApi{
                 $buyparts_img_model->saveAll($images_data);
             }
             
-            if(!empty($data['agent_uid']) && $data['agent_uid']){
+            if(!empty($data['agent_uid'])){
                 //添加系统消息
                 $content = sprintf('【求购通知】又有新的求购啦（%s），在微信中报价或登录管理后台处理吧！',$data['title']);
                 $user_message_model = model('UserMessage');
-                $user_message_model->addMessage($data['agent_uid'],'',$content);
+                $user_message_model->addMessage(array('uid'=>$data['agent_uid'],'title'=>'','content'=>$content));
                 
                 //添加平台消息
                 $content = sprintf('【求购通知】有新的求购发布（%s），请持续关注！',$data['title']);
                 $sysconf_message_model = model('SysconfMessage');
-                $sysconf_message_model->addMessage($data['agent_uid'],'',$content);
+                $sysconf_message_model->addMessage(array('uid'=>$data['agent_uid'],'title'=>'','content'=>$content));
+                
+                //添加任务
+                $task_datas = array();
                 
                 //添加到期提醒任务
-                $task_data = array();
-                $task_data['data'] = array('buy_id'=>$buy_id);
-                $task_data['available_at'] = $data['end_time'];
-                $task = new \tool\Task();
-                $task->addTask($task_data, 1, 'outOfDateReminder');
+                $task_datas[] = array(
+                    'type' => 'outOfDateReminder',
+                    'data' => array('buy_id'=>$buy_id),
+                    'available_at' => $data['end_time']
+                );
+
+                //添加短信发送任务
+                $user_model = model('User');
+                $agent = $user_model->getUserInfoByUid($data['agent_uid'],'phone');
+                if(!empty($agent['phone'])){
+                    $task_datas[] = array(
+                        'type' => 'sendSms',
+                        'data' => array(
+                            'phone'=>$agent['phone'],
+                            'module_id'=> '',
+                            'data' => array()
+                         ),
+                        'available_at' => $data['end_time']
+                    );
+                }
+
+                $task = new Task();
+                $task->addTask($task_datas, 1, true);
                 
                 //发送客服消息
                 postCustomerMessage($data['agent_uid'], 10004, array($data['title'],4000883993),'miniprogrampage','');
                 
-                //发送短信
-                $user_model = model('User');
-                $agent = $user_model->getInfo(array('uid'=>$data['agent_uid']),'phone');
-                if(!empty($agent['phone'])){
-                    sendSms($agent['phone'], 111111, array());
-                }
-                
             }
 
-            return jsonReturn(SUCCESSED, '操作成功');
+            return jsonReturn(SUCCESSED, '操作成功', date('Y-m-d H:i:s',$data['end_time']));
         }
         
         return jsonReturn(BAD_SERVER, '操作失败');
@@ -207,15 +222,20 @@ class Purchase extends BaseApi{
         $offer_price_num = 0;
         $buyparts_offer_price_model = model('BuypartsOfferPrice');
         $buyparts_negotiated_price_model = model('BuypartsNegotiatedPrice');
-        $field = 'offer_id,add_time,price,content,status,img_count';
-        $offer_prices = $buyparts_offer_price_model->getOfferPrices(array('user_id'=>$this->user_info['uid'],'buy_id'=>$buypart['buy_id']),$field);
+        $offer_price_field = 'offer_id,add_time,price,content,status,img_count';
+        
+        $offer_price_where = array();
+        $offer_price_where['user_id'] = $this->user_info['uid'];
+        $offer_price_where['buy_id'] = $buypart['buy_id'];
+        $offer_price_where['status'] = array('neq',3);
+        $offer_prices = $buyparts_offer_price_model->getOfferPrices($offer_price_where,$offer_price_field);
+        
         if(!empty($offer_prices)){
             $offer_price_num = count($offer_prices);
             
             foreach ($offer_prices as &$offer_price){
                 $offer_price['add_time'] = date('Y-m-d H:i',$offer_price['add_time']);
-                $offer_price['status_txt'] = $offer_price['status'];
-                $offer_price['status'] = $offer_price->getData('status');
+                $offer_price['status_code'] = $offer_price->getData('status');
                 
                 //获取报价信息图片
                 $offer_price_imgs = array();
@@ -229,6 +249,7 @@ class Purchase extends BaseApi{
                 $offer_price['negotiated_price'] = $buyparts_negotiated_price_model->getPrice(array('offer_id'=>$offer_price['offer_id']));
             }
         }
+        
         $buypart['offer_prices'] = $offer_prices;
         $buypart['offer_price_num'] = $offer_price_num;
         
@@ -310,19 +331,32 @@ class Purchase extends BaseApi{
             //添加系统消息
             $content = sprintf('【报价通知】又有新的报价啦（%s），报价为%s元，在微信中接受报价或登录管理后台处理吧！',$buypart['title'], $data['price']);
             $user_message_model = model('UserMessage');
-            $user_message_model->addMessage($buypart['user_id'],'',$content);
+            $user_message_model->addMessage(array('uid'=>$buypart['user_id'],'title'=>'','content'=>$content));
             
             //添加平台消息
             $content = sprintf('【报价通知】有新的报价发布（%s），请持续关注！',$buypart['title']);
-            $user_message_model = model('SysconfMessage');
-            $user_message_model->addMessage($buypart['user_id'],'',$content);
+            $sysconf_message_model = model('SysconfMessage');
+            $sysconf_message_model->addMessage(array('uid'=>$buypart['user_id'],'title'=>'','content'=>$content));
             
+            //添加短信发送任务
+            if(!empty($buypart['mobile'])){
+                $task_data = array(
+                    'type' => 'sendSms',
+                    'data' => array(
+                        'phone'=>$buypart['mobile'],
+                        'module_id'=> '',
+                        'data' => array()
+                    ),
+                    'available_at' => time()
+                );
+                
+                $task = new Task();
+                $task->addTask($task_data);
+            }
+  
             //发送客服消息
             postCustomerMessage($buypart['user_id'], 10006, array($buypart['title'],$data['price'],4000883993),'miniprogrampage','');
-            
-            //发送短信
-            sendSms($buypart['mobile'], '', array());
-            
+
             return jsonReturn(SUCCESSED, '操作成功');
         }
         
@@ -625,18 +659,31 @@ class Purchase extends BaseApi{
             //添加系统消息
             $content = sprintf('【报价通知】对方对您的报价进行了议价（%s），价格为%s元，在微信中查看或登录管理后台处理吧！',$offer_price['title'],$price);
             $user_message_model = model('UserMessage');
-            $user_message_model->addMessage($offer_price['seller_id'],'',$content);
+            $user_message_model->addMessage(array('uid'=>$offer_price['seller_id'],'title'=>'','content'=>$content));
             
             //添加平台消息
             $content = sprintf('【报价通知】有新的议价发布（%s），请持续关注！',$offer_price['title']);
             $sysconf_message_model = model('SysconfMessage');
-            $sysconf_message_model->addMessage($offer_price['seller_id'],'',$content);
+            $sysconf_message_model->addMessage(array('uid'=>$offer_price['seller_id'],'title'=>'','content'=>$content));
+            
+            //添加短信发送任务
+            if(!empty($offer_price['seller_contact'])){
+                $task_data = array(
+                    'type' => 'sendSms',
+                    'data' => array(
+                        'phone'=>$offer_price['seller_contact'],
+                        'module_id'=> '',
+                        'data' => array()
+                    ),
+                    'available_at' => time()
+                );
+            
+                $task = new Task();
+                $task->addTask($task_data);
+            }
             
             //发送客服消息
             postCustomerMessage($offer_price['seller_id'], 10008, array($offer_price['title'],$price,4000883993),'miniprogrampage','');
-            
-            //发送短信
-            sendSms($offer_price['seller_contact'], '', array());
             
             return jsonReturn(SUCCESSED, '操作成功');
         }

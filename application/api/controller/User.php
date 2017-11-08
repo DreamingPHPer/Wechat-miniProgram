@@ -105,15 +105,15 @@ class User extends BaseApi{
         $area_model = model('Area');
         
         if(!empty($user_info['province'])){
-            $user_info['province'] = $area_model->getNameByAreaCode($user_info['province']);
+            $user_info['province_txt'] = $area_model->getNameByAreaCode($user_info['province']);
         }
         
         if(!empty($user_info['city'])){
-            $user_info['city'] = $area_model->getNameByAreaCode($user_info['city']);
+            $user_info['city_txt'] = $area_model->getNameByAreaCode($user_info['city']);
         }
         
         if(!empty($user_info['area'])){
-            $user_info['area'] = $area_model->getNameByAreaCode($user_info['area']);
+            $user_info['area_txt'] = $area_model->getNameByAreaCode($user_info['area']);
         }
 
         return jsonReturn(SUCCESSED, '用户信息获取成功', $user_info);
@@ -217,13 +217,7 @@ class User extends BaseApi{
             if(!empty($data['agent_uid'])){
                 //发送客服消息
                 postCustomerMessage($data['agent_uid'], 10002, array('4000883993'));
-            
-                //添加系统消息
-                $user_message_model = model('UserMessage');
-                $data = array();
-                $data['uid'] = $data['agent_uid'];
-                $data['title'] = '';
-            
+
                 $area_model = model('Area');
                 $province = $city = $area = '';
             
@@ -239,9 +233,10 @@ class User extends BaseApi{
                     $area = $area_model->getNameByAreaCode($data['area']);
                 }
             
-                $data['content'] = sprintf('【有新用户加盟】您代理的区域（%s）有新用户加入啦，赶紧登录后台查看吧！',$province.$city.$area);
-            
-                $user_message_model->save($data);
+                //添加系统消息
+                $content = sprintf('【有新用户加盟】您代理的区域（%s）有新用户加入啦，赶紧登录后台查看吧！',$province.$city.$area);
+                $user_message_model = model('UserMessage');
+                $user_message_model->addMessage(array('uid'=>$data['agent_uid'],'title'=>'','content'=>$content));
             }
             
             return true;
@@ -268,17 +263,25 @@ class User extends BaseApi{
                     //发送客服消息
                     postCustomerMessage($data['agent_uid'], 10002, array('4000883993'));
                     
-                    //保存系统消息
-                    $user_message_model = model('UserMessage');
-                    $data = array();
-                    $data['uid'] = $uid;
-                    $data['title'] = '';
-                    
                     $area_model = model('Area');
-                    $agent_area = $area_model->getAreaName($data['province'],$data['city'],$data['area']);
-                    $data['content'] = sprintf('【有新用户加盟】您代理的区域（%s）有新用户加入啦，赶紧登录后台查看吧！',$agent_area);
-                    
-                    $user_message_model->save($data);
+                    $province = $city = $area = '';
+                
+                    if(!empty($data['province'])){
+                        $province = $area_model->getNameByAreaCode($data['province']);
+                    }
+                
+                    if(!empty($data['city'])){
+                        $city = $area_model->getNameByAreaCode($data['city']);
+                    }
+                
+                    if(!empty($data['area'])){
+                        $area = $area_model->getNameByAreaCode($data['area']);
+                    }
+                
+                    //添加系统消息
+                    $content = sprintf('【有新用户加盟】您代理的区域（%s）有新用户加入啦，赶紧登录后台查看吧！',$province.$city.$area);
+                    $user_message_model = model('UserMessage');
+                    $user_message_model->addMessage(array('uid'=>$data['agent_uid'],'title'=>'','content'=>$content));
                     
                 }
 

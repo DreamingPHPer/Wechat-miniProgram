@@ -1,6 +1,7 @@
 <?php
 namespace app\api\controller;
 use app\common\controller\BaseApi;
+use tool\Task;
 
 //订单信息控制类
 class Order extends BaseApi{
@@ -142,47 +143,71 @@ class Order extends BaseApi{
                 //添加系统消息
                 $content = sprintf('【下单通知】求购方已付款（%s），请尽快完成发货。',$order['buypart']['title']);
                 $user_message_model = model('UserMessage');
-                $user_message_model->addMessage($order['offer_user_id'],'',$content);
+                $user_message_model->addMessage(array('uid'=>$order['offer_user_id'],'title'=>'','content'=>$content));
                 
                 //添加平台消息
                 $content = sprintf('【下单通知】有新的订单完成付款（%s），请持续关注！',$order['buypart']['title']);
                 $sysconf_message_model = model('SysconfMessage');
-                $sysconf_message_model->addMessage($order['offer_user_id'],'',$content);
+                $sysconf_message_model->addMessage(array('uid'=>$order['offer_user_id'],'title'=>'','content'=>$content));
                 
-                //发送客服消息
-                postCustomerMessage($order['offer_user_id'], 10011, array($order['buypart']['title'],4000883993));
-                
-                //发送短信
+                //添加短信发送任务
                 $user_model = model('User');
                 $seller = $user_model->getUserInfoByUid($order['offer_user_id'],'phone');
                 if(!empty($seller['phone'])){
-                    sendSms($seller['phone'], '', array());
+                    $task_data = array(
+                        'type' => 'sendSms',
+                        'data' => array(
+                            'phone'=>$seller['phone'],
+                            'module_id'=> '',
+                            'data' => array()
+                        ),
+                        'available_at' => time()
+                    );
+                
+                    $task = new Task();
+                    $task->addTask($task_data);
                 }
+                
+                //发送客服消息
+                postCustomerMessage($order['offer_user_id'], 10011, array($order['buypart']['title'],4000883993));
                 
                 //已发货
             }elseif($data['status'] == 2){
                 //添加系统消息
                 $content = sprintf('【发货通知】您求购的商品已发货（%s），请注意查收。',$order['buypart']['title']);
                 $user_message_model = model('UserMessage');
-                $user_message_model->addMessage($order['user_id'],'',$content);
+                $user_message_model->addMessage(array('uid'=>$order['user_id'],'title'=>'','content'=>$content));
                 
                 //将确认收货提醒加入任务表，进行监听
-                $task_data = array();
-                $task_data['data'] = array('order_id'=>$order_id);
-                $task_data['available_at'] = $data['shipping_time'] + 5*24*3600;
-                $task = new \tool\Task();
-                $task->addTask($task_data, 1, 'receiveReminder');
+                $task_datas = array();
+                $task_datas[] = array(
+                    'type' => 'receiveReminder',
+                    'data' => array(
+                        'order_id'=>$order_id
+                    ),
+                    'available_at' => $data['shipping_time'] + 5*24*3600
+                );
                 
-                //发送客服消息
-                postCustomerMessage($order['user_id'], 10012, array($order['buypart']['title'],4000883993));
-           
-                //发送短信
                 $user_model = model('User');
                 $buyer = $user_model->getUserInfoByUid($order['user_id'],'phone');
                 if(!empty($buyer['phone'])){
-                    sendSms($buyer['phone'], '', array());
+                    $task_datas[] = array(
+                        'type' => 'sendSms',
+                        'data' => array(
+                            'phone'=>$buyer['phone'],
+                            'module_id'=> '',
+                            'data' => array()
+                        ),
+                        'available_at' => time()
+                    );
                 }
+
+                $task = new Task();
+                $task->addTask($task_datas, 1, true);
                 
+                //发送客服消息
+                postCustomerMessage($order['user_id'], 10012, array($order['buypart']['title'],4000883993));
+
                 //确认收货
             }elseif($data['status'] == 3){
                 //分配佣金
@@ -264,31 +289,45 @@ class Order extends BaseApi{
             $buypart_model->save(array('status'=>2),array('buy_id'=>$buypart['buy_id']));
             
             //将订单加入任务表，进行监听是否支付
-            $task_data = array();
-            $task_data['data'] = array('order_id'=>$order_id);
-            $task_data['available_at'] = $data['add_time'] + 2*3600;
-            $task = new \tool\Task();
-            $task->addTask($task_data, 1, 'payReminder');
+            $task_datas = array();
+            $task_datas[] = array(
+                'type' => 'payReminder',
+                'data' => array(
+                    'order_id'=>$order_id
+                ),
+                'available_at' => $data['add_time'] + 2*3600
+            );
+            
+            //添加短信发送任务
+            $user_model = model('User');
+            $seller = $user_model->getUserInfoByUid($buypart['seller_id'],'phone');
+            if(!empty($seller['phone'])){
+                $task_datas[] = array(
+                    'type' => 'sendSms',
+                    'data' => array(
+                        'phone'=>$seller['phone'],
+                        'module_id'=> '',
+                        'data' => array()
+                    ),
+                    'available_at' => time()
+                );
+            }
+            
+            $task = new Task();
+            $task->addTask($task_datas, 1, true);
    
             //添加系统消息
             $content = sprintf('【报价通知】您的报价被对方接受啦（%s），价格为%s元，请持续关注交易动态！',$buypart['title'], $buypart['offer_price']);
             $user_message_model = model('UserMessage');
-            $user_message_model->addMessage($buypart['seller_id'],'',$content);
+            $user_message_model->addMessage(array('uid'=>$buypart['seller_id'],'title'=>'','content'=>$content));
             
             //添加平台消息
             $content = sprintf('【报价通知】报价被接受了（%s），请持续关注！',$buypart['title']);
             $sysconf_message_model = model('SysconfMessage');
-            $sysconf_message_model->addMessage($buypart['seller_id'],'',$content);
+            $sysconf_message_model->addMessage(array('uid'=>$buypart['seller_id'],'title'=>'','content'=>$content));
 
             //发送客服消息给卖方
             postCustomerMessage($buypart['seller_id'], 10007, array($buypart['title'],$buypart['offer_price'],4000883993));
-            
-            //发送短信
-            $user_model = model('User');
-            $seller = $user_model->getUserInfoByUid($buypart['seller_id'],'phone');
-            if(!empty($seller['phone'])){
-                sendSms($seller['phone'], '', array());
-            }
             
             return jsonReturn(SUCCESSED, '操作成功', $order_model->order_id);
         }
