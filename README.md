@@ -16,12 +16,12 @@ www  WEB部署目录（或者子目录）
 │  │  ├─controller      控制器目录
 │  │  ├─model           模型目录
 │  │  └─ ...            更多类库目录
-│  ├─api        		api接口模块
+│  ├─api                api接口模块
 │  │  ├─controller      控制器目录
 │  │  ├─model           模型目录
 │  │  ├─validate        验证类目录
 │  │  └─ ...            更多类库目录
-│  ├─oauth        		oauth2模块
+│  ├─oauth              oauth2模块
 │  │  ├─controller      控制器目录
 │  │  └─ ...            更多类库目录
 │  ├─extra        		拓展配置目录
@@ -53,7 +53,7 @@ www  WEB部署目录（或者子目录）
 │  └─start.php          框架入口文件
 │
 ├─extend                扩展类库目录
-│  ├─tool          		工具类库
+│  ├─tool               工具类库
 │  └─wechat         	微信服务器验证、响应目录
 ├─runtime               应用的运行时目录（可写，可定制）
 ├─vendor                第三方类库目录（Composer依赖库）
