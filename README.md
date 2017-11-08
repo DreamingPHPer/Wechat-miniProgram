@@ -24,7 +24,7 @@ www  WEB部署目录（或者子目录）
 │  ├─oauth              oauth2模块
 │  │  ├─controller      控制器目录
 │  │  └─ ...            更多类库目录
-│  ├─extra        		拓展配置目录
+│  ├─extra              拓展配置目录
 │  │
 │  ├─command.php        命令行工具配置文件
 │  ├─common.php         公共函数文件
