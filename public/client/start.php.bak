@@ -1,0 +1,70 @@
+<?php
+use Workerman\Worker;
+use Workerman\Connection\AsyncTcpConnection;
+use think\Log;
+
+if(!defined('GLOBAL_START'))
+{
+	// 定义应用目录
+    define('APP_PATH', __DIR__ . '/../../application/');
+    
+    // 检查扩展
+    if(!extension_loaded('pcntl'))
+    {
+        exit("Please install pcntl extension.\n");
+    }
+    
+    if(!extension_loaded('posix'))
+    {
+        exit("Please install posix extension.\n");
+    }
+    
+    // 加载基础文件
+	require __DIR__ . '/../../thinkphp/base.php';
+	
+	\think\App::initCommon();
+}
+
+$client_worker = new Worker('http://127.0.0.1:8081');
+
+// worker名称
+$client_worker->name = 'taskClientWorker';
+
+// Worker进程数量
+$client_worker->count = 10;
+
+$client_worker->onWorkerStart = function($client_worker){
+    
+};
+
+$client_worker->onMessage = function($connection,$data){
+    $task_connection = new AsyncTcpConnection('text://127.0.0.1:12345');
+    
+    //发送数据
+    $task_connection->send(json_encode($data));
+    
+    $task_connection->onConnect = function($task_connection)use($connection){
+        $connection->send('操作成功');
+    }; 
+    
+    //异步获得结果
+    $task_connection->onMessage = function($task_connection, $task_result){
+        if(!$task_result['status']){
+            Log::write(json_encode($task_result));
+        }
+        
+        //获得结果后记得关闭异步链接
+        $task_connection->close();
+
+    };
+
+    //执行异步链接
+    $task_connection->connect();
+};
+
+// 如果不是在根目录启动，则运行runAll方法
+if(!defined('GLOBAL_START'))
+{
+    Worker::runAll();
+}
+

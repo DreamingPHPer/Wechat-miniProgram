@@ -1,0 +1,53 @@
+<?php
+use Workerman\Worker;
+
+if(!defined('GLOBAL_START'))
+{
+	// 定义应用目录
+    define('APP_PATH', __DIR__ . '/../../application/');
+    
+    // 检查扩展
+    if(!extension_loaded('pcntl'))
+    {
+        exit("Please install pcntl extension.\n");
+    }
+    
+    if(!extension_loaded('posix'))
+    {
+        exit("Please install posix extension.\n");
+    }
+    
+    // 加载基础文件
+	require __DIR__ . '/../../thinkphp/base.php';
+	
+	\think\App::initCommon();
+}
+
+$server_worker = new Worker('text://127.0.0.1:12345');
+
+// worker名称
+$server_worker->name = 'taskServerWorker';
+
+// Worker进程数量
+$server_worker->count = 10;
+
+$server_worker->onMessage = function($connection,$task_data){
+    $task_data = json_decode($task_data, true);
+    
+    $result = '';
+    
+    if($task_data['function'] == 'send_sms'){
+        $result = sendSms($task_data['phone'],$task_data['module_id'],$task_data['data']);
+    }
+    
+    $result = !empty($result) && $result['status'] ? $result : array('status'=>false,'info'=>'短信发送失败','data'=>$task_data);
+    
+    $connection->send($result);
+
+};
+
+// 如果不是在根目录启动，则运行runAll方法
+if(!defined('GLOBAL_START'))
+{
+    Worker::runAll();
+}
