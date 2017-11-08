@@ -1,9 +1,10 @@
-Wechat-miniProgram
+﻿Wechat-miniProgram
 ===============
-[![Latest Unstable Version](https://poser.pugx.org/topthink/think/v/unstable)](https://packagist.org/packages/topthink/think)
-[![License](https://poser.pugx.org/topthink/think/license)](https://packagist.org/packages/topthink/think)
 
-本框架基于ThinkPHP5开发，集成了微信公众号开发、小程序开发等模块，只需要修改配置文件，即可正常使用
+随着微信的普及，微信公众号和小程序的开发，成了很多人工作之一。虽然不同的项目关注的功能不一样，但是基本的开发流程几乎一致。
+比如，对接微信服务器，调用微信接口，获取用户在微信中的信息等等。为让相关工作人员能将更多的精力集中在差异化的功能开发上，现开源以下代码。
+本代码基于ThinkPHP5开发，集成了微信公众号开发、小程序开发等模块，包括微信服务器的验证、消息的推送、事件的响应以及定时任务、oauth2接口验证等等。
+本代码开源旨在交流学习，共同进步，有不足之处，希望大家批评指出！
 
 ## 目录结构
 
