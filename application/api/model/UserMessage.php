@@ -52,14 +52,30 @@ class UserMessage extends Model{
      * @param unknown $title
      * @param unknown $content
      */
-    public function addMessage($uid,$title,$content){
-        $datas = $data = array();
-        $data['uid'] = $uid;
-        $data['title'] = $title;
-        $data['content'] = $content;
-        $data['create_time'] = time();
-        $datas[] = $data;
-        return $this->saveAll($data);
+    public function addMessage($datas, $if_multiterm = false){
+        $new_datas = array();
+        
+        if($if_multiterm){
+            if(!empty($datas)){
+                foreach ($datas as $data){
+                    $new_datas[] = array(
+                        'uid' => $data['uid'],
+                        'title' => $data['title'],
+                        'content' => $data['content'],
+                        'create_time' => time(),
+                    );
+                }
+            } 
+        }else{
+            $new_datas[] = array(
+                'uid' => $datas['uid'],
+                'title' => $datas['title'],
+                'content' => $datas['content'],
+                'create_time' => time(),
+            );
+        }
+
+        return $this->saveAll($new_datas);
     }
     
     

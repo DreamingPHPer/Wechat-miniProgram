@@ -36,12 +36,11 @@ class Task{
     
     /*
      * 添加任务
-     * param type 标志
      * pram data 
-     * form 来源
+     * from 来源
      * param $if_multiterm 数据是否多条
      * */
-    public function addTask($datas, $form = 1, $type = 'sendSms',$if_multiterm = false){
+    public function addTask($datas, $from = 1, $if_multiterm = false){
         if(empty($datas)){
             return false;
         }
@@ -52,20 +51,20 @@ class Task{
         if($if_multiterm){
             foreach($datas as $data){
                 $new_data[] = array(
-                    'type' => $type,
+                    'type' => $data['type'],
                     'data' => json_encode($data['data'], JSON_UNESCAPED_UNICODE),
                     'add_time'=>time(),
                     'available_at'=>$data['available_at'],
-                    'from' => $form
+                    'from' => $from
                 );
             }
         }else{
             $new_data[] = array(
-                'type' => $type,
+                'type' => $datas['type'],
                 'data' => json_encode($datas['data'], JSON_UNESCAPED_UNICODE),
                 'add_time'=>time(),
                 'available_at'=>$datas['available_at'],
-                'from' => $form
+                'from' => $from
             );
         }
         
