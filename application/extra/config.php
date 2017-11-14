@@ -1,12 +1,14 @@
-<?php
+﻿<?php
 return [
     //好料1平台（公众号）
-    'APPID'             => 'wx756534f735396371',
-    'APPSECRET'         => '614969ed40993d093ce5c2c15a8f69d8',
-    'TOKEN'             => 'LJW_AGENCE',
-    'ENCODINGAESKEY'    => '1DXpKOSuWCTEmgbU4erWQxQm1x9eaTRCDhXKtFoBza5',
+    'APPID'             => '',//微信公众号appid
+    'APPSECRET'         => '',//微信公众号秘钥
+    'TOKEN'             => '',//微信服务器验证Token
+    'ENCODINGAESKEY'    => '',//微信服务器验证秘钥
+    'PAYMENT_KEY'       => '',//微信支付key
+    'MCHID'             => '',//微信支付商户id
     
     //零件（小程序）
-    'MIN_PROGRAM_APPID'             => 'wxe8e5fe6b27e57b6b',
-    'MIN_PROGRAM_APPSECRET'         => '1f768ffa9ff00138d9bad3ebbfbbb7c5',
+    'MIN_PROGRAM_APPID'             => '',//微信小程序appid
+    'MIN_PROGRAM_APPSECRET'         => '',//微信小程序秘钥
 ];
