@@ -158,7 +158,7 @@ class Wechat{
 	}
 	
 	//模拟get请求
-	private function httpGet($url) {
+	public function httpGet($url) {
 		$curl = curl_init();
 		
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -175,13 +175,17 @@ class Wechat{
 	}
 	
 	//模拟post请求
-	private function httpPost($url,$post_data=array()) {
+	public function httpPost($url,$post_data=array()) {
 		$curl = curl_init();
-		curl_setopt($curl, CURLOPT_URL, $url);
 		
+		curl_setopt($curl, CURLOPT_URL, $url);
 		curl_setopt($curl, CURLOPT_POST, true);
 		
-		curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($post_data,JSON_UNESCAPED_UNICODE));
+		if(is_array($post_data)){
+		    $post_data = json_encode($post_data,JSON_UNESCAPED_UNICODE);
+		}
+		
+		curl_setopt($curl, CURLOPT_POSTFIELDS, $post_data);
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($curl, CURLOPT_TIMEOUT, 500);
 		
@@ -196,7 +200,7 @@ class Wechat{
 	}
 	
 	//创建随机字符串
-	private function createNonceStr($length = 16) {
+	public function createNonceStr($length = 16) {
 		$chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 		$str = "";
 		for ($i = 0; $i < $length; $i++) {

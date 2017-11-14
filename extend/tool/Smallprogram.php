@@ -48,7 +48,7 @@ class Smallprogram{
     }
     
     //创建随机字符串
-    private function createNonceStr($length = 16) {
+    public function createNonceStr($length = 16) {
         $chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         $str = "";
         for ($i = 0; $i < $length; $i++) {

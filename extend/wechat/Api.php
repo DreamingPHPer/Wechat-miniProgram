@@ -67,7 +67,7 @@ class Api{
 	    //用户关注公众号
 	    if($eventType == 'subscribe'){
 	        //添加用户，或更改用户状态
-	        $userModel = model('api/User');
+	        $userModel = model('User');
 	        $userModel->addUserFromWechat(array('openid'=>$openid));
 	        
 	        //获取事件KEY值
@@ -82,7 +82,7 @@ class Api{
 	            $userModel->updateRecommentUid($openid,$agent_uid);
 	        }
 	        
-	        $weiXinMessagetemplateModel = model('api/WeixinMessageTemplate');
+	        $weiXinMessagetemplateModel = model('WeixinMessageTemplate');
 	        $textMessage = $weiXinMessagetemplateModel->getTemplateByNo('10001');
 	        $textMessage = !empty($textMessage) ? sprintf($textMessage,4000883993) : '谢谢关注';
 	        
